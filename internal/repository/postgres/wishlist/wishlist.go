@@ -115,7 +115,6 @@ func (r *WishlistRepository) Update(ctx context.Context, wishlist entity.WishLis
 	return w, nil
 }
 
-// GetWishList returns a wishlist only if it belongs to userID — used by items usecase.
 func (r *WishlistRepository) GetWishList(ctx context.Context, userID, wishID uuid.UUID) (entity.WishList, error) {
 	const query = `
 		SELECT id, user_id, title, description, event_date, public_token, created_at, updated_at
