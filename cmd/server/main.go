@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	logger := zerolog.New(os.Stdout).With().Timestamp().Caller().Logger()
 
 	cfg, err := config.NewConfig()
 	if err != nil {
