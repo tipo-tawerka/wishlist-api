@@ -1,0 +1,589 @@
+openapi: 3.0.3
+info:
+  title: Wishlist API
+  description: |
+    REST API сервис для создания вишлистов к праздникам и событиям.
+    Пользователь регистрируется, создаёт вишлисты, наполняет их подарками
+    и делится уникальной публичной ссылкой. По публичной ссылке гости
+    могут просматривать вишлист и бронировать подарки без авторизации.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер
+
+tags:
+  - name: auth
+    description: Регистрация и вход
+  - name: wishlists
+    description: CRUD операции над вишлистами (требуют авторизации)
+  - name: items
+    description: CRUD операции над позициями вишлиста (требуют авторизации)
+  - name: public
+    description: Публичный доступ по токену (без авторизации)
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [auth]
+      summary: Регистрация нового пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      summary: Вход пользователя
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/wishlists:
+    get:
+      tags: [wishlists]
+      summary: Получить список своих вишлистов
+      responses:
+        '200':
+          description: Список вишлистов пользователя
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wishlist'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [wishlists]
+      summary: Создать вишлист
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistCreateRequest'
+      responses:
+        '201':
+          description: Вишлист создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wishlist'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/wishlists/{wishlistId}:
+    parameters:
+      - $ref: '#/components/parameters/WishlistId'
+    get:
+      tags: [wishlists]
+      summary: Получить свой вишлист по id
+      responses:
+        '200':
+          description: Вишлист со списком позиций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WishlistWithItems'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [wishlists]
+      summary: Обновить вишлист
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WishlistUpdateRequest'
+      responses:
+        '200':
+          description: Вишлист обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wishlist'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [wishlists]
+      summary: Удалить вишлист
+      responses:
+        '204':
+          description: Вишлист удалён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/wishlists/{wishlistId}/items:
+    parameters:
+      - $ref: '#/components/parameters/WishlistId'
+    get:
+      tags: [items]
+      summary: Список позиций вишлиста
+      responses:
+        '200':
+          description: Список позиций
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags: [items]
+      summary: Добавить позицию в вишлист
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCreateRequest'
+      responses:
+        '201':
+          description: Позиция создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/wishlists/{wishlistId}/items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/WishlistId'
+      - $ref: '#/components/parameters/ItemId'
+    get:
+      tags: [items]
+      summary: Получить позицию по id
+      responses:
+        '200':
+          description: Позиция
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      tags: [items]
+      summary: Обновить позицию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemUpdateRequest'
+      responses:
+        '200':
+          description: Позиция обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    delete:
+      tags: [items]
+      summary: Удалить позицию
+      responses:
+        '204':
+          description: Позиция удалена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/public/wishlists/{token}:
+    get:
+      tags: [public]
+      summary: Публичный просмотр вишлиста по токену
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Уникальный публичный токен вишлиста
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Публичный вишлист со списком позиций
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicWishlist'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/public/wishlists/{token}/items/{itemId}/reserve:
+    post:
+      tags: [public]
+      summary: Забронировать подарок по публичной ссылке
+      description: Помечает позицию вишлиста как забронированную. Авторизация не требуется.
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Уникальный публичный токен вишлиста
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/ItemId'
+      responses:
+        '200':
+          description: Позиция забронирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Позиция уже забронирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    WishlistId:
+      name: wishlistId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Невалидные входные данные
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Требуется авторизация
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          example: Not Found
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: strongPassword123
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: JWT-токен доступа (id пользователя в claims)
+
+    WishlistCreateRequest:
+      type: object
+      required: [title, eventDate]
+      properties:
+        title:
+          type: string
+          example: День рождения
+        description:
+          type: string
+          example: Что хочу получить на ДР
+        eventDate:
+          type: string
+          format: date
+          example: 2026-05-01
+
+    WishlistUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+          format: date
+
+    Wishlist:
+      type: object
+      required: [id, title, eventDate, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+          format: date
+        publicToken:
+          type: string
+          format: uuid
+          nullable: true
+          description: Токен для публичной ссылки (null, если публичный доступ не открыт)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    WishlistWithItems:
+      allOf:
+        - $ref: '#/components/schemas/Wishlist'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Item'
+
+    ItemCreateRequest:
+      type: object
+      required: [title, priority]
+      properties:
+        title:
+          type: string
+          example: Книга "Clean Architecture"
+        description:
+          type: string
+        productUrl:
+          type: string
+          format: uri
+          example: https://example.com/product/123
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Степень желания подарка (1 — низкий, 5 — высокий)
+
+    ItemUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        productUrl:
+          type: string
+          format: uri
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+    Item:
+      type: object
+      required: [id, wishlistId, title, priority, reserved]
+      properties:
+        id:
+          type: string
+          format: uuid
+        wishlistId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        productUrl:
+          type: string
+          format: uri
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reserved:
+          type: boolean
+          description: Забронирована ли позиция
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PublicWishlist:
+      type: object
+      required: [title, eventDate, items]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        eventDate:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicItem'
+
+    PublicItem:
+      type: object
+      required: [id, title, priority, reserved]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        productUrl:
+          type: string
+          format: uri
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reserved:
+          type: boolean
+
+security:
+  - bearerAuth: []
